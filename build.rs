@@ -106,9 +106,9 @@ fn parse_api(tu: &TranslationUnit, api_name: &str) -> String {
                                     ("Vec<std::ffi::CString>".to_string(), ".iter().map(|cs| cs.as_ptr()).collect::<Vec<_>>().as_mut_ptr() as *mut *mut i8".to_string())
                                 }
                                 _ => {
-                                    // (tp.get_display_name(), "".to_string())
-                                    println!("tp={:?}", tp);
-                                    panic!("");
+                                    (tp.get_display_name(), "".to_string())
+                                    // println!("tp={:?}", tp);
+                                    // panic!("");
                                 }
                             };
                             if rust_type == "int" {
