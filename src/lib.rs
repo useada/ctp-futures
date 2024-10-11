@@ -658,10 +658,18 @@ pub mod route {
                                 set_cstr_from_str_truncate_i8(&mut req.UserID, &ca.account);
                                 set_cstr_from_str_truncate_i8(&mut req.Password, &ca.password);
 
-                                let mut client_system_info : TThostFtdcClientSystemInfoType = [0;273usize];
-                                set_cstr_from_str_truncate_i8(&mut client_system_info, "");
+                                #[cfg(target_os = "macos")]
+                                {
+                                    let mut client_system_info : TThostFtdcClientSystemInfoType = [0;273usize];
+                                    set_cstr_from_str_truncate_i8(&mut client_system_info, "");
 
-                                api.req_user_login(&mut req, state.get_request_id(), 0, client_system_info);
+                                    api.req_user_login(&mut req, state.get_request_id(), 0, client_system_info);
+                                }
+                                #[cfg(not(target_os = "macos"))]
+                                {
+                                    api.req_user_login(&mut req, state.get_request_id());
+                                }
+
                             } else {
                                 error!(
                                     "{}:{} ctp trade RspAuthenticate={:?}",
@@ -1169,9 +1177,18 @@ pub mod query {
                         set_cstr_from_str_truncate_i8(&mut req.UserID, account);
                         set_cstr_from_str_truncate_i8(&mut req.Password, password);
 
-                        let mut client_system_info : TThostFtdcClientSystemInfoType = [0;273usize];
-                        set_cstr_from_str_truncate_i8(&mut client_system_info, "");
-                        api.req_user_login(&mut req, get_request_id(), 0, client_system_info);
+                        #[cfg(target_os = "macos")]
+                        {
+                            let mut client_system_info : TThostFtdcClientSystemInfoType = [0;273usize];
+                            set_cstr_from_str_truncate_i8(&mut client_system_info, "");
+
+                            api.req_user_login(&mut req, get_request_id(), 0, client_system_info);
+                        }
+                        #[cfg(not(target_os = "macos"))]
+                        {
+                            api.req_user_login(&mut req, get_request_id());
+                        }
+
                     } else {
                         info!("RspAuthenticate={:?}", p);
                         std::process::exit(-1);

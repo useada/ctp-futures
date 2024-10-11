@@ -81,13 +81,11 @@ impl CThostFtdcTraderApi {
                                              p_user_system_info as * mut CThostFtdcUserSystemInfoField)
                                         }
                             }
-                            pub fn req_user_login(&mut self, p_req_user_login_field: &mut CThostFtdcReqUserLoginField, n_request_id: std::os::raw::c_int, length: std::os::raw::c_int, system_info: TThostFtdcClientSystemInfoType) -> std::os::raw::c_int {
+                            pub fn req_user_login(&mut self, p_req_user_login_field: &mut CThostFtdcReqUserLoginField, n_request_id: std::os::raw::c_int) -> std::os::raw::c_int {
                                     unsafe {
                                            ((*(*self).vtable_).CThostFtdcTraderApi_ReqUserLogin)(self as *mut CThostFtdcTraderApi,
                                              p_req_user_login_field as * mut CThostFtdcReqUserLoginField,
-                                             n_request_id,
-                                             length,
-                                             system_info.as_ptr() as *mut i8)
+                                             n_request_id)
                                         }
                             }
                             pub fn req_user_logout(&mut self, p_user_logout: &mut CThostFtdcUserLogoutField, n_request_id: std::os::raw::c_int) -> std::os::raw::c_int {

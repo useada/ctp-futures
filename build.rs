@@ -112,10 +112,13 @@ fn parse_api(tu: &TranslationUnit, api_name: &str) -> String {
                                 TypeKind::IncompleteArray => {
                                     ("Vec<std::ffi::CString>".to_string(), ".iter().map(|cs| cs.as_ptr()).collect::<Vec<_>>().as_mut_ptr() as *mut *mut i8".to_string())
                                 }
-                                _ => {
+                                TypeKind::Elaborated => {
                                     (tp.get_display_name(), "".to_string())
-                                    // println!("tp={:?}", tp);
-                                    // panic!("");
+                                }
+                                _ => {
+                                    // (tp.get_display_name(), "".to_string())
+                                    println!("tp={:?}", tp);
+                                    panic!("");
                                 }
                             };
                             if rust_type == "int" {
@@ -500,17 +503,18 @@ macro_rules! p {
 fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
     let ctp_version = format!("ctp_6.7.7/{}", target_os);
+    let wrapper_file = format!("wrapper_{}.hpp", target_os);
 
     println!("cargo:rerun-if-changed=./build.rs");
     // println!("cargo:rerun-if-changed=./v_current");
-    println!("cargo:rerun-if-changed=./{ctp_version}");
-    println!("cargo:rerun-if-changed=./wrapper.hpp");
+    println!("cargo:rerun-if-changed=./{}", &ctp_version);
+    println!("cargo:rerun-if-changed=./{}", &wrapper_file);
     p!("{:?}", env::current_dir().unwrap());
 
     clang_sys::load().expect("");
     let clang = Clang::new().unwrap();
     let index = Index::new(&clang, false, false);
-    let tu = index.parser("wrapper.hpp").parse().unwrap();
+    let tu = index.parser(&wrapper_file).parse().unwrap();
 
     let mut f = File::create("./src/md_impl.rs").expect("unable to create file");
     let code = parse_api(&tu, "CThostFtdcMdApi");
@@ -526,19 +530,16 @@ fn main() {
 
 
     let dir = var("CARGO_MANIFEST_DIR").unwrap();
+    // let library_path = Path::new(&dir).join("v_current");
+    let library_path = Path::new(&dir).join(&ctp_version);
+
     if target_os != "macos" {
         // println!("cargo:rustc-link-search=./crates/ctp_futures/v_current");
-        println!("cargo:rustc-link-search=./crates/ctp-futures/{ctp_version}");
+        println!("cargo:rustc-link-search=./crates/ctp-futures/{}", &ctp_version);
+        println!("cargo:rustc-link-search=native={}", library_path.display());
     } else {
-        // println!("cargo:rustc-link-search={}", Path::new(&dir).join(&ctp_version).join("thostmduserapi_se.framework/Versions/A/").display());
-        // println!("cargo:rustc-link-search={}", Path::new(&dir).join(&ctp_version).join("thosttraderapi_se.framework/Versions/A/").display());
+        println!("cargo:rustc-link-search=framework={}", library_path.display());
     }
-
-    // let library_path = Path::new(&dir).join("v_current");
-    let library_path = Path::new(&dir).join(ctp_version);
-
-    println!("cargo:rustc-link-search=native={}", library_path.display());
-    println!("cargo:rustc-link-search=framework={}", library_path.display());
 
     let output = var("OUT_DIR").unwrap();
     let v_libs =
@@ -574,7 +575,7 @@ fn main() {
     }
 
     let bindings = bindgen::Builder::default()
-        .header("wrapper.hpp")
+        .header(&wrapper_file)
         .clang_arg("-x")
         .clang_arg("c++")
         .derive_default(true)
