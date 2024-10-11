@@ -657,7 +657,11 @@ pub mod route {
                                 set_cstr_from_str_truncate_i8(&mut req.BrokerID, &ca.broker_id);
                                 set_cstr_from_str_truncate_i8(&mut req.UserID, &ca.account);
                                 set_cstr_from_str_truncate_i8(&mut req.Password, &ca.password);
-                                api.req_user_login(&mut req, state.get_request_id());
+
+                                let mut client_system_info : TThostFtdcClientSystemInfoType = [0;273usize];
+                                set_cstr_from_str_truncate_i8(&mut client_system_info, "");
+
+                                api.req_user_login(&mut req, state.get_request_id(), 0, client_system_info);
                             } else {
                                 error!(
                                     "{}:{} ctp trade RspAuthenticate={:?}",
@@ -1164,7 +1168,10 @@ pub mod query {
                         set_cstr_from_str_truncate_i8(&mut req.BrokerID, broker_id);
                         set_cstr_from_str_truncate_i8(&mut req.UserID, account);
                         set_cstr_from_str_truncate_i8(&mut req.Password, password);
-                        api.req_user_login(&mut req, get_request_id());
+
+                        let mut client_system_info : TThostFtdcClientSystemInfoType = [0;273usize];
+                        set_cstr_from_str_truncate_i8(&mut client_system_info, "");
+                        api.req_user_login(&mut req, get_request_id(), 0, client_system_info);
                     } else {
                         info!("RspAuthenticate={:?}", p);
                         std::process::exit(-1);

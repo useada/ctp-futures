@@ -78,19 +78,26 @@ fn parse_api(tu: &TranslationUnit, api_name: &str) -> String {
                                     }
                                 }
                                 TypeKind::Typedef => {
-                                    match tp
+                                    let kind = tp
                                         .get_declaration()
                                         .unwrap()
                                         .get_typedef_underlying_type()
                                         .unwrap()
-                                        .get_kind()
+                                        .get_kind();
+                                    match kind
                                     {
                                         TypeKind::CharS => {
                                             ("std::os::raw::c_char".to_string(), "".to_string())
                                         }
+                                        TypeKind::Int => {
+                                            ("std::os::raw::c_int".to_string(), "".to_string())
+                                        }
+                                        TypeKind::ConstantArray => {
+                                            (tp.get_display_name(), ".as_ptr() as *mut i8".to_string())
+                                        }
                                         _ => {
                                             // (tp.get_display_name(), "".to_string())
-                                            println!("tp={:?}", tp);
+                                            println!("tp={:?}, kind={:?}", tp, kind);
                                             panic!("");
                                         }
                                     }
@@ -491,10 +498,15 @@ macro_rules! p {
 }
 
 fn main() {
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let ctp_version = format!("ctp_6.7.7/{}", target_os);
+
     println!("cargo:rerun-if-changed=./build.rs");
-    println!("cargo:rerun-if-changed=./v_current");
+    // println!("cargo:rerun-if-changed=./v_current");
+    println!("cargo:rerun-if-changed=./{ctp_version}");
     println!("cargo:rerun-if-changed=./wrapper.hpp");
     p!("{:?}", env::current_dir().unwrap());
+
     clang_sys::load().expect("");
     let clang = Clang::new().unwrap();
     let index = Index::new(&clang, false, false);
@@ -512,23 +524,39 @@ fn main() {
     let code = parse_spi(&tu, "CThostFtdcTraderSpi");
     f.write(code.as_bytes()).unwrap();
 
-    println!("cargo:rustc-link-search=./crates/ctp_futures/v_current");
+
     let dir = var("CARGO_MANIFEST_DIR").unwrap();
-    
-    let library_path = Path::new(&dir).join("v_current");
-    println!("cargo:rustc-link-search=native={}", library_path.display());
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
-    let output = var("OUT_DIR").unwrap();
-    let v_libs = if target_os == "windows" {
-        p!("from windows");
-        vec!["thostmduserapi_se.dll", "thosttraderapi_se.dll"]
-    } else if target_os == "linux" {
-        p!("from linux");
-        vec!["libthostmduserapi_se.so", "libthosttraderapi_se.so"]
+    if target_os != "macos" {
+        // println!("cargo:rustc-link-search=./crates/ctp_futures/v_current");
+        println!("cargo:rustc-link-search=./crates/ctp-futures/{ctp_version}");
     } else {
-        p!("aaddddd");
-        vec![]
-    };
+        // println!("cargo:rustc-link-search={}", Path::new(&dir).join(&ctp_version).join("thostmduserapi_se.framework/Versions/A/").display());
+        // println!("cargo:rustc-link-search={}", Path::new(&dir).join(&ctp_version).join("thosttraderapi_se.framework/Versions/A/").display());
+    }
+
+    // let library_path = Path::new(&dir).join("v_current");
+    let library_path = Path::new(&dir).join(ctp_version);
+
+    println!("cargo:rustc-link-search=native={}", library_path.display());
+    println!("cargo:rustc-link-search=framework={}", library_path.display());
+
+    let output = var("OUT_DIR").unwrap();
+    let v_libs =
+        if target_os == "windows" {
+            p!("for windows");
+            vec!["thostmduserapi_se.dll", "thosttraderapi_se.dll"]
+        } else if target_os == "linux" {
+            p!("for linux");
+            vec!["libthostmduserapi_se.so", "libthosttraderapi_se.so"]
+        }
+        else if target_os == "macos" {
+            p!("for macos");
+            vec![]
+        } else {
+            p!("unsupported {:?}", target_os);
+            vec![]
+        };
+
     v_libs.iter().for_each(|p| {
         std::fs::copy(
             library_path.join(p),
@@ -536,8 +564,14 @@ fn main() {
         )
         .unwrap();
     });
-    println!("cargo:rustc-link-lib=thosttraderapi_se");
-    println!("cargo:rustc-link-lib=thostmduserapi_se");
+
+    if target_os != "macos" {
+        println!("cargo:rustc-link-lib=thosttraderapi_se");
+        println!("cargo:rustc-link-lib=thostmduserapi_se");
+    } else {
+        println!("cargo:rustc-link-lib=framework=thostmduserapi_se");
+        println!("cargo:rustc-link-lib=framework=thosttraderapi_se");
+    }
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.hpp")
