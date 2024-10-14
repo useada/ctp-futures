@@ -502,12 +502,13 @@ macro_rules! p {
 
 fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
-    let ctp_version = format!("ctp_6.7.7/{}", target_os);
-    let wrapper_file = format!("wrapper_{}.hpp", target_os);
+    let ctp_version = "ctp_6.7.2";
+    let ctp_path = format!("{}/{}", ctp_version, target_os);
+    let wrapper_file = format!("wrapper_{}_{}.hpp", ctp_version, target_os);
 
     println!("cargo:rerun-if-changed=./build.rs");
     // println!("cargo:rerun-if-changed=./v_current");
-    println!("cargo:rerun-if-changed=./{}", &ctp_version);
+    println!("cargo:rerun-if-changed=./{}", &ctp_path);
     println!("cargo:rerun-if-changed=./{}", &wrapper_file);
     p!("{:?}", env::current_dir().unwrap());
 
@@ -531,11 +532,11 @@ fn main() {
 
     let dir = var("CARGO_MANIFEST_DIR").unwrap();
     // let library_path = Path::new(&dir).join("v_current");
-    let library_path = Path::new(&dir).join(&ctp_version);
+    let library_path = Path::new(&dir).join(&ctp_path);
 
     if target_os != "macos" {
         // println!("cargo:rustc-link-search=./crates/ctp_futures/v_current");
-        println!("cargo:rustc-link-search=./crates/ctp-futures/{}", &ctp_version);
+        println!("cargo:rustc-link-search=./crates/ctp-futures/{}", &ctp_path);
         println!("cargo:rustc-link-search=native={}", library_path.display());
     } else {
         println!("cargo:rustc-link-search=framework={}", library_path.display());
