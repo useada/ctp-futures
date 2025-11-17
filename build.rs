@@ -45,7 +45,7 @@ fn parse_api(tu: &TranslationUnit, api_name: &str) -> String {
                     if let Some(arguments) = arguments {
                         for p in &arguments {
                             let tp = p.get_type().unwrap();
-                            let (mut rust_type, c_type) = match tp.get_kind() {
+                            let (mut rust_type, mut c_type) = match tp.get_kind() {
                                 TypeKind::Pointer => {
                                     let tp = tp.get_pointee_type().unwrap();
                                     let d = tp.get_declaration();
@@ -92,9 +92,9 @@ fn parse_api(tu: &TranslationUnit, api_name: &str) -> String {
                                         TypeKind::Int => {
                                             ("std::os::raw::c_int".to_string(), "".to_string())
                                         }
-                                        TypeKind::ConstantArray => {
-                                            (tp.get_display_name(), ".as_ptr() as *mut i8".to_string())
-                                        }
+                                        // TypeKind::ConstantArray => {
+                                        //     (format!("&mut {}", tp.get_display_name()), ".as_mut_ptr()".to_string())
+                                        // }
                                         _ => {
                                             // (tp.get_display_name(), "".to_string())
                                             println!("tp={:?}, kind={:?}", tp, kind);
@@ -121,6 +121,10 @@ fn parse_api(tu: &TranslationUnit, api_name: &str) -> String {
                                     panic!("");
                                 }
                             };
+                            if rust_type == "TThostFtdcClientSystemInfoType" {
+                                rust_type = "&mut TThostFtdcClientSystemInfoType".to_string();
+                                c_type = ".as_mut_ptr()".to_string();
+                            }
                             if rust_type == "int" {
                                 // 或者要转为 std::os::raw::c_int
                                 rust_type = "std::os::raw::c_int".to_string();
