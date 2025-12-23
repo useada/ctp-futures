@@ -502,7 +502,7 @@ macro_rules! p {
 
 fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
-    let ctp_version = "ctp_6.7.2";
+    let ctp_version = "ctp_6.7.7";
     let ctp_path = format!("{}/{}", ctp_version, target_os);
     let wrapper_file = format!("wrapper_{}_{}.hpp", ctp_version, target_os);
 
